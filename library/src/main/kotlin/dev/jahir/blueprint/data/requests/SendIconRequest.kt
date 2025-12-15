@@ -5,6 +5,7 @@ package dev.jahir.blueprint.data.requests
 import android.content.Context
 import android.os.Build
 import android.os.Environment
+import android.util.Log
 import androidx.core.graphics.drawable.toBitmap
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.lifecycleScope
@@ -13,6 +14,7 @@ import dev.jahir.blueprint.R
 import dev.jahir.blueprint.data.models.RequestApp
 import dev.jahir.blueprint.data.requests.RequestStateManager.getRequestState
 import dev.jahir.blueprint.data.requests.RequestStateManager.registerRequestAttempt
+import dev.jahir.blueprint.data.requests.apptracker.AppTrackerHandler
 import dev.jahir.blueprint.extensions.EmailBuilder
 import dev.jahir.blueprint.extensions.clean
 import dev.jahir.blueprint.extensions.safeDrawableName
@@ -372,8 +374,39 @@ object SendIconRequest {
             if (state.state == RequestState.State.NORMAL) {
                 theCallback.onRequestStarted()
 
+                // ===== AppTracker Integration Start =====
+                // Priority 1: Check AppTracker
+                val appTrackerKey = activity.string(R.string.apptracker_access_key)
+                val useAppTracker = appTrackerKey.hasContent()
+
+                Log.d("Blueprint-Request", "AppTracker key configured: $useAppTracker")
+
+                if (useAppTracker) {
+                    val appTrackerBaseUrl = activity.string(R.string.apptracker_base_url)
+                    Log.d("Blueprint-Request", "Attempting AppTracker upload to: $appTrackerBaseUrl")
+
+                    val (succeeded, message) = AppTrackerHandler.uploadToAppTracker(
+                        activity, selectedApps, appTrackerKey, appTrackerBaseUrl
+                    )
+
+                    Log.d("Blueprint-Request", "AppTracker upload result - Success: $succeeded, Message: $message")
+
+                    if (succeeded) {
+                        theCallback.onRequestUploadFinished(true)
+                        registerRequestAttempt(activity, selectedApps.size)
+                        requestInProgress = false
+                        return@launch
+                    }
+                    // If AppTracker fails, fall through to Pacific Manager
+                    Log.w("Blueprint-Request", "AppTracker failed, falling back to Pacific Manager")
+                }
+                // ===== AppTracker Integration End =====
+
+                // Priority 2: Check Pacific Manager
                 val apiKey = activity.string(R.string.request_manager_backend_api_key)
                 val uploadToRequestManager = apiKey.hasContent()
+
+                Log.d("Blueprint-Request", "Pacific Manager key configured: $uploadToRequestManager")
 
                 val (zipFile, jsonContent) =
                     zipFiles(activity, selectedApps, uploadToRequestManager)
@@ -388,7 +421,11 @@ object SendIconRequest {
 
                     registerRequestAttempt(activity, selectedApps.size)
                     cleanFiles(activity, true)
-                } else buildEmailIntent(activity, zipFile, selectedApps, theCallback)
+                } else {
+                    // Priority 3: Email fallback
+                    Log.d("Blueprint-Request", "No backend configured, falling back to email")
+                    buildEmailIntent(activity, zipFile, selectedApps, theCallback)
+                }
                 requestInProgress = false
             } else {
                 theCallback.onRequestLimited(state, true)
