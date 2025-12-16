@@ -14,6 +14,7 @@ import androidx.palette.graphics.Palette
 import dev.jahir.blueprint.R
 import dev.jahir.blueprint.data.models.Icon
 import dev.jahir.blueprint.extensions.asAdaptive
+import dev.jahir.blueprint.extensions.getIconDisplayName
 import dev.jahir.blueprint.ui.viewholders.IconViewHolder.Companion.ICON_ANIMATION_DELAY
 import dev.jahir.blueprint.ui.viewholders.IconViewHolder.Companion.ICON_ANIMATION_DURATION
 import dev.jahir.frames.extensions.context.drawable
@@ -34,8 +35,10 @@ class IconDialog : DialogFragment() {
 
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
         super.onCreateDialog(savedInstanceState)
+        val titleText = icon?.let { requireContext().getIconDisplayName(it) }
+            ?: requireContext().getAppName()
         dialog = requireContext().mdDialog {
-            title(icon?.name ?: context.getAppName())
+            title(titleText)
             view(R.layout.item_dialog_icon)
             positiveButton(dev.jahir.frames.R.string.close) { dismiss() }
         }
