@@ -19,7 +19,10 @@ data class AppInfoCreateRequest(
     val mainActivity: String,
 
     @SerializedName("defaultName")
-    val defaultName: String
+    val defaultName: String,
+
+    @SerializedName("systemApp")
+    val systemApp: Boolean
 )
 
 /**

@@ -27,7 +27,7 @@ internal fun Context.getLocalizedName(packageName: String, defaultName: String):
             val altCntxt =
                 createPackageContext(packageName, Context.CONTEXT_IGNORE_SECURITY)
             val configuration = res.configuration
-            configuration.setLocale(java.util.Locale("en-US"))
+
             appName =
                 altCntxt.createConfigurationContext(configuration).getString(appInfo.labelRes)
         } catch (_: Exception) {

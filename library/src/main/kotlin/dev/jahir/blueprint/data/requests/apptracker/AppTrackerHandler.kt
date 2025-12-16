@@ -1,6 +1,8 @@
 package dev.jahir.blueprint.data.requests.apptracker
 
 import android.content.Context
+import android.content.pm.ApplicationInfo
+import android.content.pm.PackageManager
 import android.util.Log
 import androidx.core.graphics.drawable.toBitmap
 import com.google.gson.GsonBuilder
@@ -81,12 +83,21 @@ object AppTrackerHandler {
 
                 // Step 1: Create app info metadata in batches (max 25 per batch to avoid body size limits)
                 val appInfoRequests = selectedApps.map { app ->
+
+                    val isSystem = try {
+                        (context.packageManager.getApplicationInfo(
+                            app.packageName, 0
+                        ).flags and ApplicationInfo.FLAG_SYSTEM) != 0
+                    }
+                    catch (_: PackageManager.NameNotFoundException) {false}
+
                     AppInfoCreateRequest(
                         languageCode = languageCode,
                         localizedName = app.name,
                         packageName = app.packageName,
                         mainActivity = app.component.extractMainActivity(),
-                        defaultName = app.name
+                        defaultName = app.name,
+                        systemApp = isSystem
                     )
                 }
 
