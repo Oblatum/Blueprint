@@ -42,7 +42,7 @@
         drawable="an_icon" />
 
     <item
-        component="ComponentInfo{com.android.contacts/com.android.contacts.DialtactsContactsEntryActivity}"
-        drawable="" />
+        component="ComponentInfo{}"
+        drawable="amber_circle" />
 
 </resources>

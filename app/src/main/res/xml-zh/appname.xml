@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<appnames>
+    <!--
+      zh（中文）环境下的图标名称映射（当该图标没有对应已安装应用时使用）。
+
+      key: 图标文件名（drawable 资源名，不带扩展名），例如 amber_circle
+      value: 显示名称，例如 琥珀圆形
+
+      示例：
+      <item drawable="amber_circle" name="琥珀圆形" />
+    -->
+    <item drawable="amber_circle" name="琥珀圆形zh" />
+</appnames>

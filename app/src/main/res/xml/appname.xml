@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <appnames>
     <!--
-      用于中文环境下的图标中文名映射（优先显示）。
+      Default (fallback) icon name mapping.
+      key: drawable resource name (without extension)
+      value: display name
 
-      key: 图标文件名（drawable 资源名，不带扩展名），例如 amber_circle
-      value: 中文名，例如 琥珀圆形
-
-      示例：
-      <item drawable="amber_circle" cn="琥珀圆形" />
+      Example:
+      <item drawable="amber_circle" name="Amber Circle" />
     -->
+    <item drawable="amber_circle" name="Amber Circle" />
 </appnames>
