@@ -21,22 +21,7 @@ internal fun Context.getIconDisplayName(icon: Icon): String {
 
     IconAppLabelMapping.getInstalledAppLabel(this, drawableName)?.let { return it }
 
-    if (!isChineseLanguage()) return fallback
     return IconNameMapping.get(this)[drawableName].orEmpty().ifBlank { fallback }
-}
-
-private fun Context.isChineseLanguage(): Boolean {
-    val locale: Locale = try {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-            resources.configuration.locales[0]
-        } else {
-            @Suppress("DEPRECATION")
-            resources.configuration.locale
-        }
-    } catch (_: Exception) {
-        Locale.getDefault()
-    }
-    return locale.language.equals("zh", ignoreCase = true)
 }
 
 private object IconNameMapping {
@@ -47,29 +32,53 @@ private object IconNameMapping {
     private var cachedPackageName: String? = null
 
     @Volatile
+    private var cachedLocaleTag: String? = null
+
+    @Volatile
     private var cachedMap: Map<String, String>? = null
 
     fun get(context: Context): Map<String, String> {
         val pkg = context.packageName
+        val localeTag = context.getPrimaryLocaleTag()
         val current = cachedMap
-        if (current != null && cachedPackageName == pkg) return current
+        if (current != null && cachedPackageName == pkg && cachedLocaleTag == localeTag) return current
 
         synchronized(lock) {
             val second = cachedMap
-            if (second != null && cachedPackageName == pkg) return second
+            if (second != null && cachedPackageName == pkg && cachedLocaleTag == localeTag) return second
 
             val loaded = load(context)
             cachedPackageName = pkg
+            cachedLocaleTag = localeTag
             cachedMap = loaded
             return loaded
         }
     }
 
     private fun load(context: Context): Map<String, String> {
-        val xmlId = try {
-            context.resources.getIdentifier("appname", "xml", context.packageName)
-        } catch (_: Exception) {
-            0
+        val xmlId = run {
+            val res = context.resources
+            val name = "appname"
+            val type = "xml"
+
+            val appId = try {
+                res.getIdentifier(name, type, context.packageName)
+            } catch (_: Exception) {
+                0
+            }
+            if (appId != 0) return@run appId
+
+            val libPkg = try {
+                dev.jahir.blueprint.R::class.java.`package`?.name
+            } catch (_: Exception) {
+                null
+            }
+
+            try {
+                res.getIdentifier(name, type, libPkg)
+            } catch (_: Exception) {
+                0
+            }
         }
         if (xmlId == 0) return emptyMap()
 
@@ -111,6 +120,20 @@ private object IconNameMapping {
         }
 
         return result
+    }
+}
+
+private fun Context.getPrimaryLocaleTag(): String {
+    return try {
+        val locale: Locale = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            resources.configuration.locales[0]
+        } else {
+            @Suppress("DEPRECATION")
+            resources.configuration.locale ?: Locale.getDefault()
+        }
+        locale.toLanguageTag()
+    } catch (_: Exception) {
+        Locale.getDefault().toLanguageTag()
     }
 }
 
