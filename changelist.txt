@@ -1,0 +1,7 @@
+- library/src/main/kotlin/dev/jahir/blueprint/data/models/AppTrackerResponse.kt (created)
+- library/src/main/kotlin/dev/jahir/blueprint/data/requests/apptracker/AppTrackerHandler.kt (created)
+- library/src/main/kotlin/dev/jahir/blueprint/data/requests/apptracker/AppTrackerModels.kt (created)
+- library/src/main/kotlin/dev/jahir/blueprint/data/requests/apptracker/AppTrackerService.kt (created)
+- library/src/main/kotlin/dev/jahir/blueprint/data/requests/apptracker/S3UploadService.kt (created)
+- library/src/main/kotlin/dev/jahir/blueprint/extensions/OriginalAppIcon.kt (created)
+- library/src/main/kotlin/dev/jahir/blueprint/extensions/AppIcon.kt (modified)
