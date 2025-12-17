@@ -3,9 +3,10 @@ package dev.jahir.blueprint.ui.fragments.dialogs
 import android.app.Dialog
 import android.content.res.Configuration
 import android.graphics.Bitmap
+import android.graphics.drawable.Drawable
 import android.os.Bundle
+import android.view.View
 import androidx.appcompat.app.AlertDialog
-import androidx.appcompat.widget.AppCompatImageView
 import androidx.fragment.app.DialogFragment
 import androidx.fragment.app.FragmentActivity
 import androidx.fragment.app.FragmentManager
@@ -15,11 +16,15 @@ import dev.jahir.blueprint.R
 import dev.jahir.blueprint.data.models.Icon
 import dev.jahir.blueprint.extensions.asAdaptive
 import dev.jahir.blueprint.extensions.getIconDisplayName
+import dev.jahir.blueprint.extensions.openAppInStore
+import dev.jahir.blueprint.extensions.resolveIconPackages
+import dev.jahir.blueprint.extensions.tryLoadApplicationIcon
 import dev.jahir.blueprint.ui.viewholders.IconViewHolder.Companion.ICON_ANIMATION_DELAY
 import dev.jahir.blueprint.ui.viewholders.IconViewHolder.Companion.ICON_ANIMATION_DURATION
 import dev.jahir.frames.extensions.context.drawable
 import dev.jahir.frames.extensions.context.getAppName
 import dev.jahir.frames.extensions.fragments.mdDialog
+import dev.jahir.frames.extensions.fragments.negativeButton
 import dev.jahir.frames.extensions.fragments.positiveButton
 import dev.jahir.frames.extensions.fragments.preferences
 import dev.jahir.frames.extensions.fragments.title
@@ -27,19 +32,26 @@ import dev.jahir.frames.extensions.fragments.view
 import dev.jahir.frames.extensions.resources.asBitmap
 import dev.jahir.frames.extensions.resources.luminance
 import dev.jahir.frames.extensions.utils.bestSwatch
+import kotlin.concurrent.thread
 
 class IconDialog : DialogFragment() {
 
     private var icon: Icon? = null
     private var dialog: AlertDialog? = null
+    private var storePackageToOpen: String? = null
+    private var ui: IconDialogUi? = null
 
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
         super.onCreateDialog(savedInstanceState)
+
         val titleText = icon?.let { requireContext().getIconDisplayName(it) }
             ?: requireContext().getAppName()
         dialog = requireContext().mdDialog {
             title(titleText)
             view(R.layout.item_dialog_icon)
+            negativeButton(R.string.get_from_store) {
+                storePackageToOpen?.let { pkg -> context?.openAppInStore(pkg) }
+            }
             positiveButton(dev.jahir.frames.R.string.close) { dismiss() }
         }
         dialog?.setOnShowListener { onDialogShown() }
@@ -47,6 +59,14 @@ class IconDialog : DialogFragment() {
     }
 
     private fun onDialogShown() {
+        val dialogRef = dialog ?: return
+        ui = IconDialogUi(
+            dialogRef,
+            preferences.animationsEnabled,
+            ICON_ANIMATION_DELAY,
+            ICON_ANIMATION_DURATION
+        ).also { it.reset() }
+
         icon?.let { icon ->
             val bitmap = try {
                 context?.drawable(icon.resId)?.asAdaptive(context)?.first?.asBitmap()
@@ -54,7 +74,8 @@ class IconDialog : DialogFragment() {
                 null
             }
             bitmap?.let {
-                setIconBitmap(bitmap)
+                ui?.showPackIcon(bitmap)
+                resolveAndBindAppInfoAsync(icon)
                 try {
                     Palette.from(it)
                         .generate { palette ->
@@ -66,26 +87,30 @@ class IconDialog : DialogFragment() {
         }
     }
 
-    private fun setIconBitmap(bitmap: Bitmap?) {
-        bitmap ?: return
-        val iconView: AppCompatImageView? = dialog?.findViewById(R.id.icon)
-        iconView ?: return
-        iconView.apply {
-            scaleX = 0F
-            scaleY = 0F
-            alpha = 0F
-            setImageBitmap(bitmap)
-            if (preferences.animationsEnabled) {
-                animate().scaleX(1F)
-                    .scaleY(1F)
-                    .alpha(1F)
-                    .setStartDelay(ICON_ANIMATION_DELAY)
-                    .setDuration(ICON_ANIMATION_DURATION)
-                    .start()
-            } else {
-                scaleX = 1F
-                scaleY = 1F
-                alpha = 1F
+    private fun resolveAndBindAppInfoAsync(icon: Icon) {
+        val ctx = context ?: return
+        thread(start = true, name = "IconDialogResolve") {
+            val resolution = try {
+                ctx.resolveIconPackages(icon)
+            } catch (_: Exception) {
+                null
+            }
+            val appDrawable: Drawable? = try {
+                resolution?.installedPackage?.let { ctx.tryLoadApplicationIcon(it) }
+            } catch (_: Exception) {
+                null
+            }
+
+            val storePkg = resolution?.storePackage
+
+            if (!isAdded) return@thread
+            val dialogRef = dialog ?: return@thread
+            dialogRef.window?.decorView?.post {
+                if (!isAdded) return@post
+
+                storePackageToOpen = storePkg
+                ui?.setStoreButtonVisible(!storePkg.isNullOrBlank())
+                ui?.setAppIcon(appDrawable)
             }
         }
     }

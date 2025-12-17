@@ -38,8 +38,8 @@
         drawable="cell" />
 
     <item
-        component="ComponentInfo{/}"
-        drawable="an_icon" />
+        component="ComponentInfo{com.tencent.mm/com.android.contacts.DialtactsContactsEntryActivity}"
+        drawable="blue_circle" />
 
     <item
         component="ComponentInfo{}"
