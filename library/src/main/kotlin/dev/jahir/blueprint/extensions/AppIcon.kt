@@ -18,7 +18,8 @@ fun getDefaultAppIcon(): Drawable? {
 
 fun Context.getAppIcon(pkg: String, preferBanner: Boolean = false): Drawable? {
     if (!pkg.hasContent()) return null
-    var icon: Drawable? = null
+    var icon: Drawable? = getOriginalAppIcon(pkg)
+    if (icon != null) return icon
     try {
         // If we should prefer the app's banner, try to get it first so that if it fails we can fallback to the icon
         if (preferBanner) {

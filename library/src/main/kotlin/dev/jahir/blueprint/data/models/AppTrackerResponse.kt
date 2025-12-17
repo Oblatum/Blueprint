@@ -1,3 +1,8 @@
+/*
+ * Copyright (c) 2025 Ding2FTW
+ * This file is part of Blueprint and is licensed under CC-BY-SA 4.0.
+ * See LICENSE.md for details.
+ */
 package dev.jahir.blueprint.data.models
 
 import android.os.Parcelable
