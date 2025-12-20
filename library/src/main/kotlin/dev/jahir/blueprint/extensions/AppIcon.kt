@@ -18,7 +18,8 @@ fun getDefaultAppIcon(): Drawable? {
 
 fun Context.getAppIcon(pkg: String): Drawable? {
     if (!pkg.hasContent()) return null
-    var icon: Drawable? = null
+    var icon: Drawable? = getOriginalAppIcon(pkg)
+    if (icon != null) return icon
     try {
         icon = loadIcon(pkg)
         if (icon == null) icon = packageManager.getApplicationIcon(pkg)
